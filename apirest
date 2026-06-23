@@ -1,0 +1,49 @@
+#!/bin/bash
+
+#KLUCZ API 
+API_KEY=""
+
+# Walidacja argumentu wejsciowego 
+if [ -z "$1" ]; then
+    echo "Blad: Nie podano nazwy panstwa."
+    echo "Uzycie: $0 <nazwa_kraju>"
+    echo "Przyklad: $0 Poland"
+    exit 1
+fi
+
+NAZWA_KRAJU="$1"
+
+#Pobieranie danych z API 
+echo "Pobieranie danych dla: $NAZWA_KRAJU..."
+ODPOWIEDZ=$(curl -s \
+    -H "Authorization: Bearer ${API_KEY}" \
+    "https://api.restcountries.com/countries/v5/names.common/${NAZWA_KRAJU}")
+
+# Sprawdzenie bledu (v5 zwraca pole "errors" gdy cos pojdzie nie tak)
+if echo "$ODPOWIEDZ" | jq -e '.errors' &>/dev/null; then
+    BLAD=$(echo "$ODPOWIEDZ" | jq -r '.errors[0].message')
+    echo "Błąd API: $BLAD"
+    exit 3
+fi
+
+#Parsowanie danych z JSON
+# Sprawdz strukture i wpisz odpowiednia sciezke
+OBIEKT=$(echo "$ODPOWIEDZ" | jq '.data.objects[0]')
+
+PELNA_NAZWA=$(echo "$OBIEKT" | jq -r '.names.official')
+STOLICA=$(echo "$OBIEKT"     | jq -r '.capitals[0].name')
+KONTYNENT=$(echo "$OBIEKT"   | jq -r '.region')
+WALUTA=$(echo "$OBIEKT"      | jq -r '.currencies[0] | "\(.name) (\(.code))"')
+STREFA=$(echo "$OBIEKT"      | jq -r '.timezones[0]')
+POPULACJA=$(echo "$OBIEKT"   | jq -r '.population')
+JEZYK=$(echo "$OBIEKT"       | jq -r '.languages[0].name')
+
+# Wyswietlenie wynikow
+echo "  INFORMACJE O KRAJU: $PELNA_NAZWA"
+echo "  Pełna nazwa oficjalna : $PELNA_NAZWA"
+echo "  Stolica               : $STOLICA"
+echo "  Kontynent             : $KONTYNENT"
+echo "  Waluta                : $WALUTA"
+echo "  Strefa czasowa        : $STREFA"
+echo "  Populacja             : $POPULACJA"
+echo "  Język urzędowy        : $JEZYK"
